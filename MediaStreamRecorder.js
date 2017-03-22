@@ -1,4 +1,4 @@
-// Last time updated: 2017-02-21 8:23:06 AM UTC
+// Last time updated: 2017-03-22 4:55:36 PM UTC
 
 // links:
 // Open-Sourced: https://github.com/streamproc/MediaStreamRecorder
@@ -62,6 +62,7 @@ function MediaStreamRecorder(mediaStream) {
         }
 
         mediaRecorder = new Recorder(mediaStream);
+        this.mediaRecorder = mediaRecorder;
         mediaRecorder.blobs = [];
 
         var self = this;
@@ -1117,7 +1118,7 @@ if (typeof MediaStreamRecorder !== 'undefined') {
 
 function StereoAudioRecorderHelper(mediaStream, root) {
 
-    // variables    
+    // variables
     var deviceSampleRate = 44100; // range: 22050 to 96000
 
     if (!ObjectStore.AudioContextConstructor) {
@@ -1280,12 +1281,15 @@ function StereoAudioRecorderHelper(mediaStream, root) {
 
     function convertoFloat32ToInt16(buffer) {
         var l = buffer.length;
-        var buf = new Int16Array(l)
+        var buf = new Int16Array(l);
 
         while (l--) {
-            buf[l] = buffer[l] * 0xFFFF; //convert to 16 bit
+            var s = Math.max(-1, Math.min(1, buffer[l]));
+            buf[l] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+            // console.log(s, buffer[l], buf[l]);
+            // buf[l] = buffer[l] * 0xFFFF; //convert to 16 bit
         }
-        return buf.buffer
+        return buf.buffer;
     }
 
     // creates the audio context
@@ -1295,6 +1299,9 @@ function StereoAudioRecorderHelper(mediaStream, root) {
     ObjectStore.VolumeGainNode = context.createGain();
 
     var volume = ObjectStore.VolumeGainNode;
+    console.log(typeof volume);
+    root.volume = volume;
+    volume.gain.value = 0.5;
 
     // creates an audio node from the microphone incoming stream
     ObjectStore.AudioInput = context.createMediaStreamSource(mediaStream);
@@ -1308,7 +1315,7 @@ function StereoAudioRecorderHelper(mediaStream, root) {
     /* From the spec: This value controls how frequently the audioprocess event is
     dispatched and how many sample-frames need to be processed each call.
     Lower values for buffer size will result in a lower (better) latency.
-    Higher values will be necessary to avoid audio breakup and glitches 
+    Higher values will be necessary to avoid audio breakup and glitches
     Legal values are 256, 512, 1024, 2048, 4096, 8192, and 16384.*/
     var bufferSize = root.bufferSize || 2048;
     if (root.bufferSize === 0) {

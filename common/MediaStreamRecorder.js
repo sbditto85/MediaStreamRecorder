@@ -38,6 +38,7 @@ function MediaStreamRecorder(mediaStream) {
         }
 
         mediaRecorder = new Recorder(mediaStream);
+        this.mediaRecorder = mediaRecorder;
         mediaRecorder.blobs = [];
 
         var self = this;
